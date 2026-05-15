@@ -1,5 +1,5 @@
 # Update-Software.ps1
-# Auto-installs winget if missing + updates all software
+# Auto-installs winget if missing, then updates all software
 
 # Run as Administrator
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
@@ -7,36 +7,34 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
     exit
 }
 
-# Fix common NuGet/TLS issues
+# Fix TLS issues that block downloads
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 function Install-Winget {
     Write-Host "🔧 winget not found. Installing now..." -ForegroundColor Yellow
     
     try {
-        # Download latest winget
         $url = "https://github.com/microsoft/winget-cli/releases/latest/download/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle"
         $path = "$env:TEMP\winget.msixbundle"
         
-        Write-Host "Downloading winget..." -ForegroundColor Cyan
+        Write-Host "Downloading winget installer..." -ForegroundColor Cyan
         Invoke-WebRequest -Uri $url -OutFile $path -UseBasicParsing
         
         Write-Host "Installing winget..." -ForegroundColor Cyan
         Add-AppxPackage -Path $path
         
-        # Clean up
         Remove-Item $path -Force -ErrorAction SilentlyContinue
         
         Write-Host "✅ winget installed successfully!" -ForegroundColor Green
     }
     catch {
         Write-Error "Failed to install winget: $($_.Exception.Message)"
-        Write-Host "Try installing manually from the Microsoft Store (search for 'App Installer')" -ForegroundColor Red
+        Write-Host "Please install 'App Installer' manually from the Microsoft Store" -ForegroundColor Red
         exit
     }
 }
 
-# Check and install winget if needed
+# Check if winget is installed
 if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
     Install-Winget
 }
